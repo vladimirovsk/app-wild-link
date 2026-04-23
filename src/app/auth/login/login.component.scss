@@ -1,0 +1,201 @@
+.login-page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.bg-image {
+  position: absolute;
+  inset: 0;
+  background-image: url('/assets/images/kananaskis-panorama.jpg');
+  background-size: cover;
+  background-position: center 30%;
+  transform: scale(1.04);
+  filter: blur(1px);
+}
+
+.bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 31, 22, 0.60) 0%,
+    rgba(15, 31, 22, 0.75) 50%,
+    rgba(15, 31, 22, 0.90) 100%
+  );
+}
+
+.login-card {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 1rem;
+  padding: 2.5rem 2rem;
+  background: rgba(15, 31, 22, 0.55);
+  border: 1px solid rgba(248, 250, 252, 0.10);
+  border-radius: 16px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* Brand */
+.brand {
+  text-align: center;
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 0.25rem;
+}
+
+.brand-wild {
+  color: #F8FAFC;
+}
+
+.brand-link {
+  color: #FF5C00;
+}
+
+.brand-tagline {
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(248, 250, 252, 0.45);
+  margin-bottom: 2rem;
+}
+
+/* Error */
+.error-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  border-radius: 8px;
+  background: rgba(255, 92, 0, 0.15);
+  border: 1px solid rgba(255, 92, 0, 0.35);
+  color: #FF5C00;
+  font-size: 0.85rem;
+}
+
+/* Fields */
+.field-group {
+  margin-bottom: 1.25rem;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: rgba(248, 250, 252, 0.55);
+  margin-bottom: 0.5rem;
+}
+
+.field-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(248, 250, 252, 0.25);
+  padding: 0.5rem 0;
+  color: #F8FAFC;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+
+  &::placeholder {
+    color: rgba(248, 250, 252, 0.25);
+  }
+
+  &:focus {
+    border-bottom-color: #FF5C00;
+  }
+
+  &--error {
+    border-bottom-color: rgba(255, 92, 0, 0.6);
+  }
+}
+
+.field-error {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: rgba(255, 92, 0, 0.85);
+}
+
+/* Password toggle */
+.password-wrapper {
+  position: relative;
+}
+
+.toggle-pw {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: rgba(248, 250, 252, 0.35);
+  transition: color 0.2s;
+  line-height: 0;
+
+  &:hover {
+    color: rgba(248, 250, 252, 0.7);
+  }
+}
+
+/* Submit button */
+.btn-signin {
+  width: 100%;
+  margin-top: 1.75rem;
+  padding: 0.875rem;
+  border: none;
+  border-radius: 8px;
+  background: #FF5C00;
+  color: #F8FAFC;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+
+  &:hover:not(:disabled) {
+    background: #e05200;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+/* Loading spinner */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(248, 250, 252, 0.3);
+  border-top-color: #F8FAFC;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

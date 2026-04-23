@@ -1,0 +1,77 @@
+<div class="login-page">
+  <!-- Background image with overlay -->
+  <div class="bg-image"></div>
+  <div class="bg-overlay"></div>
+
+  <!-- Centered card -->
+  <div class="login-card">
+    <!-- Brand -->
+    <div class="brand">
+      <span class="brand-wild">Wild</span><span class="brand-link">Link</span>
+    </div>
+    <p class="brand-tagline">Admin Portal</p>
+
+    <!-- Error alert -->
+    <div class="error-alert" *ngIf="error">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      {{ error }}
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+      <div class="field-group">
+        <label class="field-label">EMAIL</label>
+        <input
+          class="field-input"
+          [class.field-input--error]="emailControl?.invalid && emailControl?.touched"
+          type="email"
+          formControlName="email"
+          placeholder="you@example.com"
+          autocomplete="email"
+        />
+        <span class="field-error" *ngIf="emailControl?.invalid && emailControl?.touched">
+          <ng-container *ngIf="emailControl?.errors?.['required']">Email is required</ng-container>
+          <ng-container *ngIf="emailControl?.errors?.['email']">Enter a valid email</ng-container>
+        </span>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">PASSWORD</label>
+        <div class="password-wrapper">
+          <input
+            class="field-input"
+            [class.field-input--error]="passwordControl?.invalid && passwordControl?.touched"
+            [type]="showPassword ? 'text' : 'password'"
+            formControlName="password"
+            placeholder="••••••••"
+            autocomplete="current-password"
+          />
+          <button type="button" class="toggle-pw" (click)="showPassword = !showPassword" tabindex="-1">
+            <svg *ngIf="!showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <svg *ngIf="showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+          </button>
+        </div>
+        <span class="field-error" *ngIf="passwordControl?.invalid && passwordControl?.touched">
+          <ng-container *ngIf="passwordControl?.errors?.['required']">Password is required</ng-container>
+          <ng-container *ngIf="passwordControl?.errors?.['minlength']">Minimum 6 characters</ng-container>
+        </span>
+      </div>
+
+      <button class="btn-signin" type="submit" [disabled]="loading">
+        <span *ngIf="!loading">SIGN IN</span>
+        <span *ngIf="loading" class="spinner"></span>
+      </button>
+    </form>
+  </div>
+</div>

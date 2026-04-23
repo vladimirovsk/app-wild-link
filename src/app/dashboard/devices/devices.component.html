@@ -1,0 +1,72 @@
+<div class="devices-panel">
+  <div class="devices-header">
+    <h2 class="devices-title">Devices</h2>
+    <p class="devices-sub">Registered LoRa mesh nodes</p>
+  </div>
+
+  <!-- Stats row -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <span class="stat-value">{{ onlineCount }}</span>
+      <span class="stat-label">Online</span>
+      <span class="stat-bar stat-bar--online"></span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value">{{ warningCount }}</span>
+      <span class="stat-label">Warning</span>
+      <span class="stat-bar stat-bar--warning"></span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value">{{ offlineCount }}</span>
+      <span class="stat-label">Offline</span>
+      <span class="stat-bar stat-bar--offline"></span>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table class="devices-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Status</th>
+          <th>Battery</th>
+          <th>Last Seen</th>
+          <th>Coordinates</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let d of devices" class="device-row">
+          <td class="td-id">{{ d.id }}</td>
+          <td class="td-name">{{ d.name }}</td>
+          <td>
+            <span class="badge" [ngClass]="'badge--' + d.status">
+              {{ d.status | titlecase }}
+            </span>
+          </td>
+          <td>
+            <div class="battery-bar">
+              <div
+                class="battery-fill"
+                [style.width.%]="d.battery"
+                [ngClass]="d.battery < 20 ? 'battery-fill--low' : d.battery < 50 ? 'battery-fill--mid' : 'battery-fill--ok'"
+              ></div>
+            </div>
+            <span class="battery-pct">{{ d.battery }}%</span>
+          </td>
+          <td class="td-seen">{{ d.lastSeen }}</td>
+          <td class="td-coords">{{ d.lat.toFixed(3) }}, {{ d.lng.toFixed(3) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Coming soon note -->
+  <div class="coming-soon">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    Live data endpoint coming soon — showing mock data
+  </div>
+</div>

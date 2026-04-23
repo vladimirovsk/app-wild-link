@@ -1,0 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  --orange:      #FF5C00;
+  --bg-base:     #0F1F16;
+  --bg-surface:  rgba(15, 31, 22, 0.75);
+  --bg-topbar:   rgba(15, 31, 22, 0.92);
+  --bg-card:     rgba(15, 31, 22, 0.88);
+  --border-0:    rgba(248, 250, 252, 0.06);
+  --border-1:    rgba(248, 250, 252, 0.10);
+  --border-2:    rgba(248, 250, 252, 0.16);
+  --text-1:      #F8FAFC;
+  --text-2:      rgba(248, 250, 252, 0.55);
+  --text-3:      rgba(248, 250, 252, 0.38);
+  --text-4:      rgba(248, 250, 252, 0.22);
+  --scrollbar:   rgba(248, 250, 252, 0.15);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-1);
+}

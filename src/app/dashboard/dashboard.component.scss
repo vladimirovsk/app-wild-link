@@ -1,0 +1,151 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--bg-base);
+  overflow: hidden;
+  transition: background 0.25s;
+}
+
+/* ── Top bar ────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  height: 56px;
+  flex-shrink: 0;
+  background: var(--bg-topbar);
+  border-bottom: 1px solid var(--border-0);
+  backdrop-filter: blur(8px);
+  z-index: 20;
+  transition: background 0.25s, border-color 0.25s;
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  &__logo { flex-shrink: 0; }
+
+  &__name {
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+  }
+
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  &__view-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    color: var(--text-3);
+  }
+}
+
+.name-wild { color: var(--text-1); }
+.name-link { color: var(--orange); }
+
+/* Logout button */
+.btn-logout {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: 1px solid var(--border-1);
+  border-radius: 6px;
+  color: var(--text-2);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+
+  &:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+  }
+}
+
+/* ── Workspace ──────────────────────────────── */
+.workspace {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  app-map,
+  app-devices {
+    flex: 1;
+    display: block;
+    overflow: hidden;
+    min-height: 0;
+  }
+}
+
+/* ── Left sidebar ───────────────────────────── */
+.sidebar {
+  width: 72px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem 0;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-0);
+  gap: 0.25rem;
+  transition: background 0.25s, border-color 0.25s;
+
+  &__spacer { flex: 1; }
+
+  &__btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    color: var(--text-3);
+    transition: background 0.15s, color 0.15s;
+
+    &:hover:not(:disabled) {
+      background: rgba(255, 92, 0, 0.10);
+      color: var(--text-1);
+    }
+
+    &--active {
+      background: rgba(255, 92, 0, 0.15);
+      color: var(--orange);
+
+      &:hover { background: rgba(255, 92, 0, 0.20); }
+    }
+
+    &--muted {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+  }
+
+  &__label {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+}

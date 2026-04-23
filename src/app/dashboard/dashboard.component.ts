@@ -1,0 +1,19 @@
+import { Component } from '@angular/core';
+import { AuthService } from '../auth/auth.service';
+
+type View = 'map' | 'devices';
+
+@Component({
+  selector: 'app-dashboard',
+  templateUrl: './dashboard.component.html',
+  styleUrls: ['./dashboard.component.scss']
+})
+export class DashboardComponent {
+  activeView: View = 'map';
+
+  constructor(public auth: AuthService) {}
+
+  setView(view: View): void {
+    this.activeView = view;
+  }
+}
