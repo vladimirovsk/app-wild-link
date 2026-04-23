@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
+import { environment } from '../../environments/environment';
 import { Device } from './device.model';
 
 const MOCK_DEVICES: Device[] = [
@@ -14,7 +15,7 @@ const MOCK_DEVICES: Device[] = [
 
 @Injectable({ providedIn: 'root' })
 export class DeviceService {
-  private readonly API_URL = 'http://localhost:9087/api/v1';
+  private readonly API_URL = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 

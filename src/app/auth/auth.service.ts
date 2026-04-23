@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface LoginRequest {
   email: string;
@@ -14,7 +15,7 @@ export interface LoginResponse {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly API_URL = 'http://localhost:9087/api/v1';
+  private readonly API_URL = environment.apiUrl;
   private readonly TOKEN_KEY = 'wildlink_token';
 
   constructor(private http: HttpClient, private router: Router) {}
