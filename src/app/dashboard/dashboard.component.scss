@@ -87,7 +87,8 @@
   flex-direction: column;
 
   app-map,
-  app-devices {
+  app-devices,
+  app-htit-test {
     flex: 1;
     display: block;
     overflow: hidden;
@@ -141,11 +142,54 @@
       opacity: 0.3;
       cursor: not-allowed;
     }
+
+    &--test {
+      border: 1px solid transparent;
+      font-size: 0.6rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+
+      &:hover:not(:disabled) {
+        border-color: rgba(255, 92, 0, 0.35);
+      }
+
+      &.sidebar__btn--active {
+        border-color: rgba(255, 92, 0, 0.5);
+      }
+    }
   }
 
   &__label {
     font-size: 0.6rem;
     font-weight: 600;
     letter-spacing: 0.04em;
+  }
+
+  &__icon-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__conn-dot {
+    position: absolute;
+    top: -3px;
+    right: -5px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: transparent;
+    transition: background 0.2s;
+
+    &--open {
+      background: #22c55e;
+      box-shadow: 0 0 0 1.5px var(--bg-surface);
+    }
+
+    &--error {
+      background: #ef4444;
+      box-shadow: 0 0 0 1.5px var(--bg-surface);
+    }
   }
 }

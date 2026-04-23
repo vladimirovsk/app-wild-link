@@ -4,10 +4,11 @@ import {
   ChangeDetectionStrategy
 } from '@angular/core';
 import * as L from 'leaflet';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { DeviceService } from '../../shared/device.service';
-import { Device } from '../../shared/device.model';
+import { Device, formatLastSeen } from '../../shared/device.model';
 
-// Voyager: readable neutral terrain — darkened via CSS filter in SCSS
 const TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 const TILE_ATTR = '&copy; <a href="https://carto.com/">CARTO</a>';
 
@@ -45,6 +46,8 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
   selectedDevice: Device | null = null;
   private map!: L.Map;
+  private markers = new Map<string, L.Marker>();
+  private destroy$ = new Subject<void>();
 
   constructor(
     private deviceService: DeviceService,
@@ -53,8 +56,8 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.map = L.map(this.mapContainer.nativeElement, {
-      center: [50.82, -115.25],
-      zoom: 9,
+      center: [51.1, -114.1],
+      zoom: 10,
       zoomControl: false,
     });
 
@@ -66,10 +69,30 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       maxZoom: 19,
     }).addTo(this.map);
 
-    this.deviceService.getDevices().subscribe(devices => {
-      devices.forEach(device => {
-        const marker = L.marker([device.lat, device.lng], { icon: makeMarkerIcon(device.status) });
-        marker.bindTooltip(device.name, {
+    this.deviceService.getDevices()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(devices => this.syncMarkers(devices));
+  }
+
+  private syncMarkers(devices: Device[]): void {
+    const liveIds = new Set<string>();
+
+    for (const device of devices) {
+      if (!device.hasGps) continue;
+      liveIds.add(device.nodeId);
+
+      if (this.markers.has(device.nodeId)) {
+        // Update existing marker
+        const marker = this.markers.get(device.nodeId)!;
+        marker.setLatLng([device.lat, device.lng]);
+        marker.setIcon(makeMarkerIcon(device.status));
+        marker.setTooltipContent(this.tooltipContent(device));
+      } else {
+        // Add new marker
+        const marker = L.marker([device.lat, device.lng], {
+          icon: makeMarkerIcon(device.status),
+        });
+        marker.bindTooltip(this.tooltipContent(device), {
           direction: 'top', className: 'wl-tooltip', offset: [0, -14],
         });
         marker.on('click', () => {
@@ -77,24 +100,48 @@ export class MapComponent implements AfterViewInit, OnDestroy {
           this.cdr.markForCheck();
         });
         marker.addTo(this.map);
-      });
-    });
+        this.markers.set(device.nodeId, marker);
+      }
+    }
+
+    // Update selectedDevice reference if it's still in the list
+    if (this.selectedDevice) {
+      const updated = devices.find(d => d.nodeId === this.selectedDevice!.nodeId);
+      if (updated) {
+        this.selectedDevice = updated;
+        this.cdr.markForCheck();
+      }
+    }
+
+    // Remove markers for disconnected devices without GPS
+    for (const [id, marker] of this.markers) {
+      if (!liveIds.has(id)) {
+        marker.remove();
+        this.markers.delete(id);
+      }
+    }
   }
 
+  private tooltipContent(d: Device): string {
+    return `<strong>!${d.nodeId}</strong><br>${d.battery}% · ${d.sats} sats`;
+  }
+
+  formatLastSeen = formatLastSeen;
+
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
     this.map?.remove();
   }
 
-  zoomIn(): void  { this.map?.zoomIn(); }
+  zoomIn():  void { this.map?.zoomIn(); }
   zoomOut(): void { this.map?.zoomOut(); }
 
   fitDevices(): void {
-    if (!this.map) return;
-    this.deviceService.getDevices().subscribe(devices => {
-      if (!devices.length) return;
-      const bounds = L.latLngBounds(devices.map(d => [d.lat, d.lng] as L.LatLngTuple));
-      this.map.fitBounds(bounds, { padding: [60, 60] });
-    });
+    const withGps = Array.from(this.markers.values());
+    if (!withGps.length || !this.map) return;
+    const group = L.featureGroup(withGps);
+    this.map.fitBounds(group.getBounds(), { padding: [60, 60] });
   }
 
   closeInfo(): void {

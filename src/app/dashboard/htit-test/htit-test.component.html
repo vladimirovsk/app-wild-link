@@ -1,0 +1,171 @@
+<div class="htit-shell">
+
+  <!-- Header -->
+  <div class="htit-header">
+    <div class="htit-header__title">
+      <span class="htit-header__chip">MODULE</span>
+      <h2>htit-wb32-laf-v4.2</h2>
+      <span *ngIf="activeTab === 'api'" class="htit-header__badge" [class]="'badge--' + status">{{ status }}</span>
+    </div>
+    <p class="htit-header__sub">Test connection &amp; data processing for external LoRa/Wi-Fi module</p>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="htit-tabs">
+    <button class="htit-tab" [class.htit-tab--active]="activeTab === 'serial'" (click)="activeTab = 'serial'">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="7" width="20" height="10" rx="2"/>
+        <path d="M16 12h2M6 12h2M11 12h2"/>
+      </svg>
+      USB Serial Console
+    </button>
+    <button class="htit-tab" [class.htit-tab--active]="activeTab === 'api'" (click)="activeTab = 'api'">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M5 12h14M12 5l7 7-7 7"/>
+      </svg>
+      API Connection
+    </button>
+  </div>
+
+  <!-- ── Tab: USB Serial ──────────────────────── -->
+  <app-serial-console *ngIf="activeTab === 'serial'"></app-serial-console>
+
+  <!-- ── Tab: API ─────────────────────────────── -->
+  <div class="htit-body" *ngIf="activeTab === 'api'">
+
+    <!-- Left: Form -->
+    <section class="htit-panel">
+      <h3 class="panel-title">Connection Parameters</h3>
+
+      <form [formGroup]="form" class="conn-form" autocomplete="off">
+
+        <div class="field">
+          <label>Module ID</label>
+          <input formControlName="moduleId" type="text" placeholder="htit-wb32-laf-v4.2" />
+        </div>
+
+        <div class="field-row">
+          <div class="field field--grow">
+            <label>Host / IP</label>
+            <input formControlName="host" type="text" placeholder="localhost" />
+          </div>
+          <div class="field field--port">
+            <label>Port</label>
+            <input formControlName="port" type="number" placeholder="9087" />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Protocol</label>
+            <select formControlName="protocol">
+              <option value="http">HTTP</option>
+              <option value="https">HTTPS</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Poll interval (s)</label>
+            <input formControlName="interval" type="number" min="1" max="60" />
+          </div>
+        </div>
+
+        <div class="api-preview">
+          <span class="api-preview__label">Endpoint:</span>
+          <code class="api-preview__url">{{ apiUrl }}/module/{{ form.value.moduleId }}</code>
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn--primary"
+            [disabled]="form.invalid || status === 'connecting' || status === 'connected'"
+            (click)="connect()"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+            Connect
+          </button>
+
+          <button
+            type="button"
+            class="btn btn--danger"
+            [disabled]="status === 'idle' && !lastResponse"
+            (click)="disconnect()"
+          >
+            Stop
+          </button>
+
+          <button type="button" class="btn btn--ghost" (click)="reset()">Reset</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Right: Data + Log -->
+    <div class="htit-right">
+
+      <!-- Live Data -->
+      <section class="htit-panel htit-panel--data">
+        <h3 class="panel-title">Module Response</h3>
+
+        <div *ngIf="!lastResponse && status !== 'error'" class="data-empty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".3">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 8v4l3 3"/>
+          </svg>
+          <span>No data yet. Press Connect.</span>
+        </div>
+
+        <div *ngIf="status === 'error'" class="data-error">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          {{ errorMessage }}
+        </div>
+
+        <div *ngIf="lastResponse" class="data-grid">
+          <div class="data-row">
+            <span class="data-key">Module ID</span>
+            <span class="data-val">{{ lastResponse.moduleId }}</span>
+          </div>
+          <div class="data-row">
+            <span class="data-key">Signal</span>
+            <span class="data-val">{{ lastResponse.signal }} dBm</span>
+          </div>
+          <div class="data-row" *ngIf="lastResponse.temperature !== undefined">
+            <span class="data-key">Temperature</span>
+            <span class="data-val">{{ lastResponse.temperature }} °C</span>
+          </div>
+          <div class="data-row" *ngIf="lastResponse.humidity !== undefined">
+            <span class="data-key">Humidity</span>
+            <span class="data-val">{{ lastResponse.humidity }} %</span>
+          </div>
+          <div class="data-row" *ngIf="lastResponse.voltage !== undefined">
+            <span class="data-key">Voltage</span>
+            <span class="data-val">{{ lastResponse.voltage }} V</span>
+          </div>
+          <div class="data-row">
+            <span class="data-key">Timestamp</span>
+            <span class="data-val data-val--mono">{{ lastResponse.timestamp }}</span>
+          </div>
+          <div class="data-row" *ngIf="lastResponse.raw">
+            <span class="data-key">Raw</span>
+            <pre class="data-raw">{{ lastResponse.raw | json }}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Event Log -->
+      <section class="htit-panel htit-panel--log">
+        <h3 class="panel-title">Event Log</h3>
+        <div class="log-list">
+          <div *ngFor="let entry of log" class="log-entry" [class.log-entry--error]="entry.includes('[ERROR]')">
+            {{ entry }}
+          </div>
+          <div *ngIf="log.length === 0" class="log-empty">No events yet.</div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>

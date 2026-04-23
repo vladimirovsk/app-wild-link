@@ -1,0 +1,161 @@
+<div class="sc-shell">
+
+  <!-- ── Unsupported banner ─────────────────── -->
+  <div *ngIf="!isSupported" class="sc-unsupported">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <div>
+      <strong>Web Serial API не поддерживается</strong>
+      <p>Используйте Chrome&nbsp;89+ и убедитесь, что сайт открыт по&nbsp;<code>https://</code> или&nbsp;<code>localhost</code>.</p>
+    </div>
+  </div>
+
+  <ng-container *ngIf="isSupported">
+
+    <!-- ── Top toolbar ───────────────────────── -->
+    <div class="sc-toolbar">
+
+      <!-- Port settings -->
+      <form [formGroup]="form" class="sc-toolbar__form">
+        <div class="sc-field">
+          <label>Baud rate</label>
+          <select formControlName="baudRate" [disabled]="isOpen">
+            <option *ngFor="let b of baudRates" [value]="b">{{ b }}</option>
+          </select>
+        </div>
+        <div class="sc-field sc-field--sm">
+          <label>Data</label>
+          <select formControlName="dataBits" [disabled]="isOpen">
+            <option [value]="8">8</option>
+            <option [value]="7">7</option>
+          </select>
+        </div>
+        <div class="sc-field sc-field--sm">
+          <label>Stop</label>
+          <select formControlName="stopBits" [disabled]="isOpen">
+            <option [value]="1">1</option>
+            <option [value]="2">2</option>
+          </select>
+        </div>
+        <div class="sc-field">
+          <label>Parity</label>
+          <select formControlName="parity" [disabled]="isOpen">
+            <option value="none">None</option>
+            <option value="even">Even</option>
+            <option value="odd">Odd</option>
+          </select>
+        </div>
+        <div class="sc-field">
+          <label>Line ending (TX)</label>
+          <select formControlName="lineEnding" [disabled]="isOpen">
+            <option value="\r\n">CR+LF</option>
+            <option value="\n">LF</option>
+            <option value="\r">CR</option>
+            <option value="">None</option>
+          </select>
+        </div>
+      </form>
+
+      <!-- Controls -->
+      <div class="sc-toolbar__controls">
+        <div class="sc-status-dot" [class]="'dot--' + status" [title]="status"></div>
+
+        <button
+          *ngIf="!isOpen"
+          class="btn btn--connect"
+          [disabled]="status === 'connecting'"
+          (click)="connect()"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M18.36 6.64A9 9 0 1 1 5.64 17.36"/><path d="M21 21l-4-4m4 0h-4v4"/>
+          </svg>
+          Connect USB
+        </button>
+
+        <button
+          *ngIf="isOpen"
+          class="btn btn--disconnect"
+          (click)="disconnect()"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          Disconnect
+        </button>
+
+        <button class="btn btn--ghost" title="Clear console" (click)="clearConsole()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/>
+          </svg>
+          Clear
+        </button>
+
+        <label class="sc-autoscroll">
+          <input type="checkbox" [(ngModel)]="autoScroll" />
+          <span>Auto-scroll</span>
+        </label>
+
+        <label class="sc-autoscroll sc-autoscroll--connect" title="Auto-connect when device is plugged in">
+          <input
+            type="checkbox"
+            [ngModel]="serial.autoConnect$ | async"
+            (ngModelChange)="serial.setAutoConnect($event)"
+          />
+          <span>Auto-connect</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Port info strip -->
+    <div *ngIf="portInfo" class="sc-portinfo">
+      <span *ngIf="portInfo.usbVendorId !== undefined">
+        VID: <code>0x{{ portInfo.usbVendorId.toString(16).padStart(4,'0').toUpperCase() }}</code>
+        &nbsp;PID: <code>0x{{ (portInfo.usbProductId ?? 0).toString(16).padStart(4,'0').toUpperCase() }}</code>
+      </span>
+      <span class="sc-portinfo__rx">RX: {{ rxBytes | number }} bytes</span>
+      <span class="sc-portinfo__status" [class]="'dot--' + status">{{ status }}</span>
+    </div>
+
+    <!-- ── Console output ──────────────────── -->
+    <div class="sc-console" #consoleEl>
+      <div *ngIf="entries.length === 0" class="sc-console__empty">
+        Нажмите <strong>Connect USB</strong> — выберите порт устройства htit-wb32-laf-v4.2 и данные появятся здесь.
+      </div>
+
+      <div
+        *ngFor="let e of entries"
+        class="sc-line"
+        [class.sc-line--rx]="e.kind === 'rx'"
+        [class.sc-line--tx]="e.kind === 'tx'"
+        [class.sc-line--info]="e.kind === 'info'"
+        [class.sc-line--error]="e.kind === 'error'"
+      >
+        <span class="sc-line__ts">{{ e.ts }}</span>
+        <span class="sc-line__dir">{{ e.kind === 'rx' ? '←' : e.kind === 'tx' ? '→' : '·' }}</span>
+        <span class="sc-line__text">{{ e.text }}</span>
+      </div>
+    </div>
+
+    <!-- ── TX input ────────────────────────── -->
+    <div class="sc-tx">
+      <span class="sc-tx__label">TX →</span>
+      <input
+        #txInput
+        type="text"
+        class="sc-tx__input"
+        placeholder="Введите команду и нажмите Enter..."
+        [disabled]="!isOpen"
+        (keydown.enter)="sendText(txInput.value); txInput.value = ''"
+      />
+      <button
+        class="btn btn--send"
+        [disabled]="!isOpen"
+        (click)="sendText(txInput.value); txInput.value = ''"
+      >Send</button>
+    </div>
+
+  </ng-container>
+</div>

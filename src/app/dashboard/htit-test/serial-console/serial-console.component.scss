@@ -1,0 +1,288 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.sc-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  background: var(--bg-base);
+}
+
+/* ── Unsupported ────────────────────────────── */
+.sc-unsupported {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 2rem;
+  padding: 1.25rem 1.5rem;
+  background: rgba(239,68,68,0.07);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 10px;
+  color: var(--text-1);
+
+  svg { flex-shrink: 0; color: #dc2626; margin-top: 2px; }
+
+  strong { display: block; margin-bottom: 0.35rem; font-size: 0.9rem; }
+  p { margin: 0; font-size: 0.82rem; color: var(--text-2); line-height: 1.5; }
+  code { font-family: monospace; background: var(--bg-base); padding: 0.1rem 0.3rem; border-radius: 3px; }
+}
+
+/* ── Toolbar ────────────────────────────────── */
+.sc-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-0);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+
+  &__form {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+
+  &__controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+}
+
+.sc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+
+  label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  select {
+    background: var(--bg-base);
+    border: 1px solid var(--border-1);
+    border-radius: 5px;
+    color: var(--text-1);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.55rem;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    &:focus { border-color: var(--orange); }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+
+  &--sm select { width: 60px; }
+}
+
+/* Status dot */
+.sc-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.dot--idle, .dot--unsupported { background: var(--text-3); }
+.dot--connecting { background: #e8a900; animation: pulse 1s infinite; }
+.dot--open       { background: #16a34a; }
+.dot--error      { background: #dc2626; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 0.38rem 0.85rem;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+  white-space: nowrap;
+
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  &--connect {
+    background: var(--orange);
+    color: #fff;
+    &:hover:not(:disabled) { opacity: 0.88; }
+  }
+
+  &--disconnect {
+    background: rgba(239,68,68,0.12);
+    color: #dc2626;
+    border: 1px solid rgba(239,68,68,0.25);
+    &:hover:not(:disabled) { background: rgba(239,68,68,0.2); }
+  }
+
+  &--ghost {
+    background: transparent;
+    color: var(--text-3);
+    border: 1px solid var(--border-1);
+    &:hover:not(:disabled) { color: var(--text-1); }
+  }
+
+  &--send {
+    background: rgba(255,92,0,0.12);
+    color: var(--orange);
+    border: 1px solid rgba(255,92,0,0.25);
+    &:hover:not(:disabled) { background: rgba(255,92,0,0.2); }
+  }
+}
+
+.sc-autoscroll {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--text-3);
+  cursor: pointer;
+  user-select: none;
+
+  input { accent-color: var(--orange); cursor: pointer; }
+
+  &--connect {
+    padding-left: 0.6rem;
+    border-left: 1px solid var(--border-1);
+  }
+}
+
+/* ── Port info strip ────────────────────────── */
+.sc-portinfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.3rem 1rem;
+  background: rgba(255,92,0,0.06);
+  border-bottom: 1px solid rgba(255,92,0,0.12);
+  font-size: 0.72rem;
+  color: var(--text-3);
+  flex-shrink: 0;
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--orange);
+    background: none;
+  }
+
+  &__rx { margin-left: auto; }
+  &__status { font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.65rem; }
+}
+
+/* ── Console area ───────────────────────────── */
+.sc-console {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+  background: #0e0e10;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  min-height: 0;
+
+  &__empty {
+    padding: 2rem 1.5rem;
+    color: #555;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+
+    strong { color: var(--orange); }
+  }
+}
+
+.sc-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.08rem 1rem;
+
+  &:hover { background: rgba(255,255,255,0.03); }
+
+  &--rx    .sc-line__text { color: #c8f7c5; }
+  &--tx    .sc-line__text { color: #7ec8e3; }
+  &--info  .sc-line__text { color: #888; }
+  &--error .sc-line__text { color: #f87171; }
+
+  &__ts {
+    color: #444;
+    font-size: 0.68rem;
+    flex-shrink: 0;
+    width: 80px;
+  }
+
+  &__dir {
+    width: 14px;
+    text-align: center;
+    flex-shrink: 0;
+    color: #555;
+  }
+
+  &--rx    &__dir { color: #4ade80; }
+  &--tx    &__dir { color: #38bdf8; }
+  &--error &__dir { color: #f87171; }
+
+  &__text {
+    white-space: pre-wrap;
+    word-break: break-all;
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* ── TX input ───────────────────────────────── */
+.sc-tx {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #0e0e10;
+  border-top: 1px solid #222;
+  flex-shrink: 0;
+
+  &__label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: #38bdf8;
+    flex-shrink: 0;
+  }
+
+  &__input {
+    flex: 1;
+    background: #1a1a1d;
+    border: 1px solid #333;
+    border-radius: 5px;
+    color: #e2e8f0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    padding: 0.38rem 0.75rem;
+    outline: none;
+    transition: border-color 0.15s;
+
+    &::placeholder { color: #444; }
+    &:focus { border-color: rgba(255,92,0,0.5); }
+    &:disabled { opacity: 0.35; cursor: not-allowed; }
+  }
+}

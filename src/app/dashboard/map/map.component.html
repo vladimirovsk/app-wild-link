@@ -8,28 +8,40 @@
         <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
       </svg>
     </button>
-    <div class="device-card__id">{{ selectedDevice.id }}</div>
+    <div class="device-card__id">!{{ selectedDevice.nodeId }}</div>
     <div class="device-card__name">{{ selectedDevice.name }}</div>
     <div class="device-card__row">
       <span class="status-dot" [ngClass]="'status-dot--' + selectedDevice.status"></span>
       <span class="device-card__status">{{ selectedDevice.status | titlecase }}</span>
     </div>
+
     <div class="device-card__meta">
       <div class="meta-item">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2"/>
         </svg>
         <span>{{ selectedDevice.battery }}%</span>
+        <span *ngIf="selectedDevice.voltage" class="meta-sub">{{ selectedDevice.voltage | number:'1.2-3' }}V</span>
+        <span *ngIf="selectedDevice.isCharging" class="meta-charging">⚡</span>
       </div>
+
+      <div class="meta-item" *ngIf="selectedDevice.hasGps">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+        </svg>
+        <span>{{ selectedDevice.sats }} sats · {{ selectedDevice.alt }}m</span>
+      </div>
+
       <div class="meta-item">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
         </svg>
-        <span>{{ selectedDevice.lastSeen }}</span>
+        <span>{{ formatLastSeen(selectedDevice) }}</span>
       </div>
     </div>
-    <div class="device-card__coords">
-      {{ selectedDevice.lat.toFixed(4) }}°N,&nbsp;{{ (selectedDevice.lng * -1).toFixed(4) }}°W
+
+    <div class="device-card__coords" *ngIf="selectedDevice.hasGps">
+      {{ selectedDevice.lat.toFixed(5) }},&nbsp;{{ selectedDevice.lng.toFixed(5) }}
     </div>
   </div>
 

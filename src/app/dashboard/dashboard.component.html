@@ -13,7 +13,7 @@
     </div>
 
     <div class="topbar__right">
-      <span class="topbar__view-label">{{ activeView === 'map' ? 'Map View' : 'Devices' }}</span>
+      <span class="topbar__view-label">{{ activeView === 'map' ? 'Map View' : activeView === 'devices' ? 'Devices' : 'Module Test' }}</span>
 
       <button class="btn-logout" (click)="auth.logout()" title="Sign out">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -58,6 +58,25 @@
         <span class="sidebar__label">Devices</span>
       </button>
 
+      <button
+        class="sidebar__btn sidebar__btn--test"
+        [class.sidebar__btn--active]="activeView === 'test'"
+        (click)="setView('test')"
+        title="Module Test: htit-wb32-laf-v4.2"
+      >
+        <div class="sidebar__icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/>
+          </svg>
+          <span
+            class="sidebar__conn-dot"
+            [class.sidebar__conn-dot--open]="(serial.status$ | async) === 'open'"
+            [class.sidebar__conn-dot--error]="(serial.status$ | async) === 'error'"
+          ></span>
+        </div>
+        <span class="sidebar__label">TEST</span>
+      </button>
+
       <div class="sidebar__spacer"></div>
 
       <!-- Settings placeholder -->
@@ -72,8 +91,9 @@
 
     <!-- Main content -->
     <main class="content">
-      <app-map     *ngIf="activeView === 'map'"></app-map>
-      <app-devices *ngIf="activeView === 'devices'"></app-devices>
+      <app-map       *ngIf="activeView === 'map'"></app-map>
+      <app-devices   *ngIf="activeView === 'devices'"></app-devices>
+      <app-htit-test *ngIf="activeView === 'test'"></app-htit-test>
     </main>
   </div>
 </div>
