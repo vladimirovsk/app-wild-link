@@ -52,49 +52,78 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
   private merge(db: BackendDevice[], live: import('../../shared/device.model').Device[]): DeviceRow[] {
     const liveMap = new Map(live.map(d => [d.nodeId, d]));
+    const matchedLive = new Set<string>();
 
-    const rows: DeviceRow[] = db.map(d => {
-      const lv = liveMap.get(d.deviceId);
-      // active = currently connected via USB in this browser session
-      const liveActive = !!lv && lv.status === 'online';
+    // Process real nodeId entries first so they claim the VID:PID live placeholder
+    // before any leftover VID:PID DB entries (e.g. 'usb-303a-1001') can grab it.
+    const sortedDb = [...db].sort((a) => a.deviceId.startsWith('usb-') ? 1 : -1);
+
+    const rows: DeviceRow[] = sortedDb.map(d => {
+      // 1. Direct nodeId match
+      let lv = liveMap.get(d.deviceId);
+      if (lv && matchedLive.has(lv.nodeId)) lv = undefined; // already claimed
+
+      // 2. VID:PID fallback: find an unmatched usb-placeholder with same USB IDs
+      let lvPlaceholder: import('../../shared/device.model').Device | undefined;
+      if (!lv && d.usbVendorId !== undefined) {
+        for (const [nodeId, lvDev] of liveMap) {
+          if (!matchedLive.has(nodeId) &&
+              nodeId.startsWith('usb-') &&
+              lvDev.usbVendorId === d.usbVendorId &&
+              lvDev.usbProductId === d.usbProductId) {
+            lvPlaceholder = lvDev;
+            break;
+          }
+        }
+      }
+
+      const matched = lv ?? lvPlaceholder;
+      if (matched) matchedLive.add(matched.nodeId);
+
+      const liveActive = !!matched && matched.status === 'online';
       return {
-        deviceId:    d.deviceId,
-        name:        d.name,
-        model:       d.model,
+        deviceId:     d.deviceId,
+        name:         d.name,
+        model:        d.model,
         registeredAt: new Date(d.registeredAt),
         lastSeenAt:   liveActive ? new Date() : new Date(d.lastSeenAt),
         usbVendorId:  d.usbVendorId,
         usbProductId: d.usbProductId,
-        active:      liveActive,
-        lat:     lv?.lat     ?? d.lat,
-        lng:     lv?.lng     ?? d.lng,
-        alt:     lv?.alt     ?? d.alt,
-        battery: lv?.battery ?? d.battery,
-        voltage: lv?.voltage ?? d.voltage,
-        uptime:  lv?.uptime  ?? d.uptime,
-        sats:    lv?.sats    ?? d.sats,
+        active:       liveActive,
+        // Telemetry: prefer direct nodeId match (has real data), fall back to DB.
+        // VID:PID placeholder has only default zeros — don't use it for telemetry.
+        lat:      lv?.lat      ?? d.lat,
+        lng:      lv?.lng      ?? d.lng,
+        alt:      lv?.alt      ?? d.alt,
+        battery:  lv?.battery  ?? d.battery,
+        voltage:  lv?.voltage  ?? d.voltage,
+        uptime:   lv?.uptime   ?? d.uptime,
+        sats:     lv?.sats     ?? d.sats,
         airUtilTx: lv?.airUtilTx ?? d.airUtilTx,
-        hasGps:  lv?.hasGps ?? (!!d.lat && d.lat !== 0),
+        hasGps:   lv?.hasGps  ?? (!!d.lat && d.lat !== 0),
       };
     });
 
-    // Also show live devices not yet in DB (fresh session before backend sync)
+    // Live-only rows: real nodeId devices not yet persisted to DB.
+    // Skip VID:PID placeholders (usb-*) — they are shown via DB entry matched above.
     for (const lv of live) {
+      if (matchedLive.has(lv.nodeId)) continue;
+      if (lv.nodeId.startsWith('usb-')) continue;
       if (!db.find(d => d.deviceId === lv.nodeId)) {
         rows.push({
-          deviceId:    lv.nodeId,
-          name:        lv.name,
-          model:       'htit-wb32-laf-v4.2',
+          deviceId:     lv.nodeId,
+          name:         lv.name,
+          model:        'htit-wb32-laf-v4.2',
           registeredAt: lv.connectedAt,
           lastSeenAt:   lv.lastSeenAt,
           usbVendorId:  lv.usbVendorId,
           usbProductId: lv.usbProductId,
-          active:  lv.status === 'online',
-          lat:     lv.lat, lng: lv.lng, alt: lv.alt,
-          battery: lv.battery, voltage: lv.voltage,
-          uptime:  lv.uptime, sats: lv.sats,
+          active:    lv.status === 'online',
+          lat:       lv.lat,  lng:     lv.lng,  alt:     lv.alt,
+          battery:   lv.battery, voltage: lv.voltage,
+          uptime:    lv.uptime,  sats:    lv.sats,
           airUtilTx: lv.airUtilTx,
-          hasGps:  lv.hasGps,
+          hasGps:    lv.hasGps,
         });
       }
     }
