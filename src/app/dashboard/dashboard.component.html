@@ -13,6 +13,15 @@
     </div>
 
     <div class="topbar__right">
+      <ng-container *ngIf="mesh.status$ | async as status">
+        <span class="topbar__mesh-status" [class.topbar__mesh-status--ok]="status === 'connected'"
+              [class.topbar__mesh-status--bad]="status === 'error' || status === 'unsupported'">{{ statusText[status] }}</span>
+        <button *ngIf="status !== 'unsupported'" class="btn-connect" (click)="toggleConnection(status)"
+                [disabled]="status === 'connecting'">
+          {{ status === 'connected' || status === 'configuring' ? 'Disconnect' : 'Connect device' }}
+        </button>
+      </ng-container>
+
       <span class="topbar__view-label">{{ activeView === 'map' ? 'Map View' : activeView === 'devices' ? 'Devices' : 'Module Test' }}</span>
 
       <button class="btn-logout" (click)="auth.logout()" title="Sign out">
@@ -70,8 +79,8 @@
           </svg>
           <span
             class="sidebar__conn-dot"
-            [class.sidebar__conn-dot--open]="(serial.status$ | async) === 'open'"
-            [class.sidebar__conn-dot--error]="(serial.status$ | async) === 'error'"
+            [class.sidebar__conn-dot--open]="(mesh.status$ | async) === 'connected'"
+            [class.sidebar__conn-dot--error]="(mesh.status$ | async) === 'error'"
           ></span>
         </div>
         <span class="sidebar__label">TEST</span>

@@ -47,6 +47,29 @@
     letter-spacing: 0.05em;
     color: var(--text-3);
   }
+
+  &__mesh-status {
+    font-size: 0.78rem;
+    color: var(--text-2);
+
+    &--ok  { color: #34D399; }
+    &--bad { color: #F87171; }
+  }
+}
+
+/* Connect button */
+.btn-connect {
+  background: var(--orange);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+
+  &:disabled { opacity: 0.6; cursor: default; }
 }
 
 .name-wild { color: var(--text-1); }

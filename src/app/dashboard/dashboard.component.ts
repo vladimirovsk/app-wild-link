@@ -1,11 +1,20 @@
 import { Component } from '@angular/core';
 import { AuthService } from '../auth/auth.service';
-import { SerialConnectionService } from '../shared/serial-connection.service';
+import { MeshClientService, MeshStatus } from '../mesh/mesh-client.service';
 
 type View = 'map' | 'devices' | 'test';
 
 const VIEW_KEY = 'wl_active_view';
 const VALID_VIEWS: View[] = ['map', 'devices', 'test'];
+
+const STATUS_TEXT: Record<MeshStatus, string> = {
+  unsupported: 'This browser cannot open USB devices. Use Chrome or Edge on a computer.',
+  disconnected: 'Not connected',
+  connecting: 'Connecting…',
+  configuring: 'Reading the mesh…',
+  connected: 'Connected',
+  error: 'Could not open the device. Check the cable and try again.',
+};
 
 @Component({
   selector: 'app-dashboard',
@@ -14,10 +23,11 @@ const VALID_VIEWS: View[] = ['map', 'devices', 'test'];
 })
 export class DashboardComponent {
   activeView: View;
+  readonly statusText = STATUS_TEXT;
 
   constructor(
     public auth: AuthService,
-    public serial: SerialConnectionService,
+    public mesh: MeshClientService,
   ) {
     const saved = localStorage.getItem(VIEW_KEY) as View;
     this.activeView = VALID_VIEWS.includes(saved) ? saved : 'map';
@@ -26,5 +36,13 @@ export class DashboardComponent {
   setView(view: View): void {
     this.activeView = view;
     localStorage.setItem(VIEW_KEY, view);
+  }
+
+  toggleConnection(status: MeshStatus): void {
+    if (status === 'connected' || status === 'configuring') {
+      void this.mesh.disconnect();
+    } else {
+      void this.mesh.connect();
+    }
   }
 }

@@ -57,7 +57,7 @@
               "node_modules/leaflet/dist/leaflet.css"
             ],
             "scripts": [],
-            "allowedCommonJsDependencies": ["leaflet"]
+            "allowedCommonJsDependencies": ["leaflet", "ste-simple-events"]
           },
           "configurations": {
             "production": {

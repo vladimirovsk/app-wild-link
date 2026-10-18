@@ -2,7 +2,7 @@
   <div class="devices-header">
     <div>
       <h2 class="devices-title">Devices</h2>
-      <p class="devices-sub">Registered LoRa mesh nodes</p>
+      <p class="devices-sub">Mesh nodes heard by your device, and boards registered to your account</p>
     </div>
   </div>
 
@@ -38,8 +38,8 @@
       <path d="M16 12h2M6 12h2M11 12h2"/>
       <path d="M12 7V5M12 17v2"/>
     </svg>
-    <p>No devices registered.</p>
-    <span>Go to <strong>TEST → USB Serial Console</strong>, connect your device — it will appear here automatically.</span>
+    <p>No devices yet.</p>
+    <span>Press <strong>Connect device</strong> at the top and pick your board; every node it hears will appear here.</span>
   </div>
 
   <!-- Table -->
@@ -53,9 +53,8 @@
           <th>Voltage</th>
           <th>GPS</th>
           <th>Alt</th>
-          <th>Sats</th>
-          <th>Uptime</th>
-          <th>Registered</th>
+          <th>Hops</th>
+          <th>SNR</th>
           <th>Last Seen</th>
           <th></th>
         </tr>
@@ -78,7 +77,7 @@
             <ng-container *ngIf="editingId !== d.deviceId; else editTpl">
               <div class="node-name-row">
                 <span class="node-name">{{ d.name }}</span>
-                <button class="btn-edit" (click)="startEdit(d)" title="Rename">
+                <button *ngIf="d.registered" class="btn-edit" (click)="startEdit(d)" title="Rename">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -106,14 +105,16 @@
               </div>
             </ng-template>
 
-            <div class="node-id">!{{ d.deviceId }}</div>
+            <div class="node-id">{{ d.nodeId }}</div>
             <div class="node-meta node-meta--hex">0x{{ d.deviceId.toUpperCase() }}</div>
-            <div class="node-meta">{{ d.model }}</div>
+            <div class="node-meta" *ngIf="d.isSelf">this device</div>
           </td>
 
           <!-- Battery -->
           <td>
-            <ng-container *ngIf="d.battery !== undefined; else dash">
+            <span *ngIf="d.externalPower" class="battery-pct">Powered</span>
+            <span *ngIf="!d.externalPower && d.battery === undefined">—</span>
+            <ng-container *ngIf="!d.externalPower && d.battery !== undefined">
               <div class="battery-bar">
                 <div class="battery-fill"
                   [style.width.%]="d.battery"
@@ -131,18 +132,15 @@
 
           <!-- GPS -->
           <td class="td-coords">
-            <ng-container *ngIf="d.hasGps; else noGps">
+            <ng-container *ngIf="d.lat !== undefined && d.lng !== undefined; else noGps">
               {{ d.lat!.toFixed(5) }}<br>{{ d.lng!.toFixed(5) }}
             </ng-container>
             <ng-template #noGps><span class="muted">No fix</span></ng-template>
           </td>
 
-          <td class="td-mono">{{ d.hasGps && d.alt !== undefined ? d.alt + ' m' : '—' }}</td>
-          <td class="td-mono">{{ d.sats ?? '—' }}</td>
-          <td class="td-mono">{{ formatUptime(d.uptime) }}</td>
-
-          <!-- Registered -->
-          <td class="td-seen">{{ d.registeredAt | date:'dd.MM.yy HH:mm' }}</td>
+          <td class="td-mono">{{ d.alt !== undefined ? d.alt + ' m' : '—' }}</td>
+          <td class="td-mono">{{ d.hopsAway ?? '—' }}</td>
+          <td class="td-mono">{{ d.snr !== undefined ? (d.snr | number:'1.0-1') + ' dB' : '—' }}</td>
 
           <!-- Last Seen -->
           <td class="td-seen">
@@ -151,7 +149,7 @@
 
           <!-- Delete -->
           <td class="td-action">
-            <ng-container *ngIf="deletingId !== d.deviceId; else confirmTpl">
+            <ng-container *ngIf="d.registered && deletingId !== d.deviceId">
               <button class="btn-delete" (click)="confirmDelete(d.deviceId)" title="Delete device">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="3 6 5 6 21 6"/>
@@ -161,12 +159,12 @@
                 </svg>
               </button>
             </ng-container>
-            <ng-template #confirmTpl>
+            <ng-container *ngIf="deletingId === d.deviceId">
               <div class="confirm-row">
                 <button class="btn-confirm-yes" (click)="deleteDevice(d.deviceId)">Delete</button>
                 <button class="btn-confirm-no"  (click)="cancelDelete()">Cancel</button>
               </div>
-            </ng-template>
+            </ng-container>
           </td>
 
         </tr>
@@ -175,4 +173,3 @@
   </div>
 </div>
 
-<ng-template #dash>—</ng-template>

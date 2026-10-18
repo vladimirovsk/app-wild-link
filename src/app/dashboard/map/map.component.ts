@@ -6,21 +6,23 @@ import {
 import * as L from 'leaflet';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { DeviceService } from '../../shared/device.service';
-import { Device, formatLastSeen } from '../../shared/device.model';
+import { MapMarker, nodeLabel, toMarkers } from '../../mesh/map-markers';
+import { MeshNode } from '../../mesh/mesh-node.model';
+import { NodeStoreService } from '../../mesh/node-store.service';
 
 const TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 const TILE_ATTR = '&copy; <a href="https://carto.com/">CARTO</a>';
 
-const STATUS_COLOR: Record<Device['status'], string> = {
+type MarkerState = 'online' | 'offline';
+
+const STATE_COLOR: Record<MarkerState, string> = {
   online:  '#FF5C00',
-  warning: '#F59E0B',
   offline: '#94A3B8',
 };
 
-function makeMarkerIcon(status: Device['status']): L.DivIcon {
-  const color = STATUS_COLOR[status];
-  const pulse  = status === 'online'
+function makeMarkerIcon(state: MarkerState): L.DivIcon {
+  const color = STATE_COLOR[state];
+  const pulse  = state === 'online'
     ? `<span class="marker-pulse" style="background:${color}"></span>` : '';
   return L.divIcon({
     className: '',
@@ -35,6 +37,10 @@ function makeMarkerIcon(status: Device['status']): L.DivIcon {
   });
 }
 
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+}
+
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
@@ -44,13 +50,14 @@ function makeMarkerIcon(status: Device['status']): L.DivIcon {
 export class MapComponent implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer') mapContainer!: ElementRef<HTMLDivElement>;
 
-  selectedDevice: Device | null = null;
+  selectedNode: MeshNode | null = null;
+  private nodes: MeshNode[] = [];
   private map!: L.Map;
   private markers = new Map<string, L.Marker>();
   private destroy$ = new Subject<void>();
 
   constructor(
-    private deviceService: DeviceService,
+    private nodeStore: NodeStoreService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -69,51 +76,44 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       maxZoom: 19,
     }).addTo(this.map);
 
-    this.deviceService.getDevices()
+    this.nodeStore.nodes$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(devices => this.syncMarkers(devices));
+      .subscribe(nodes => {
+        this.nodes = nodes;
+        this.syncMarkers(toMarkers(nodes));
+      });
   }
 
-  private syncMarkers(devices: Device[]): void {
+  private syncMarkers(markers: MapMarker[]): void {
     const liveIds = new Set<string>();
 
-    for (const device of devices) {
-      if (!device.hasGps) continue;
-      liveIds.add(device.nodeId);
+    for (const m of markers) {
+      liveIds.add(m.id);
+      const icon = makeMarkerIcon(m.stale ? 'offline' : 'online');
+      const tooltip = this.tooltipContent(m);
+      const existing = this.markers.get(m.id);
 
-      if (this.markers.has(device.nodeId)) {
-        // Update existing marker
-        const marker = this.markers.get(device.nodeId)!;
-        marker.setLatLng([device.lat, device.lng]);
-        marker.setIcon(makeMarkerIcon(device.status));
-        marker.setTooltipContent(this.tooltipContent(device));
+      if (existing) {
+        existing.setLatLng([m.lat, m.lng]);
+        existing.setIcon(icon);
+        existing.setTooltipContent(tooltip);
       } else {
-        // Add new marker
-        const marker = L.marker([device.lat, device.lng], {
-          icon: makeMarkerIcon(device.status),
-        });
-        marker.bindTooltip(this.tooltipContent(device), {
-          direction: 'top', className: 'wl-tooltip', offset: [0, -14],
-        });
+        const marker = L.marker([m.lat, m.lng], { icon });
+        marker.bindTooltip(tooltip, { direction: 'top', className: 'wl-tooltip', offset: [0, -14] });
         marker.on('click', () => {
-          this.selectedDevice = device;
+          this.selectedNode = this.nodes.find(n => n.id === m.id) ?? null;
           this.cdr.markForCheck();
         });
         marker.addTo(this.map);
-        this.markers.set(device.nodeId, marker);
+        this.markers.set(m.id, marker);
       }
     }
 
-    // Update selectedDevice reference if it's still in the list
-    if (this.selectedDevice) {
-      const updated = devices.find(d => d.nodeId === this.selectedDevice!.nodeId);
-      if (updated) {
-        this.selectedDevice = updated;
-        this.cdr.markForCheck();
-      }
+    if (this.selectedNode) {
+      this.selectedNode = this.nodes.find(n => n.id === this.selectedNode?.id) ?? null;
+      this.cdr.markForCheck();
     }
 
-    // Remove markers for disconnected devices without GPS
     for (const [id, marker] of this.markers) {
       if (!liveIds.has(id)) {
         marker.remove();
@@ -122,11 +122,23 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  private tooltipContent(d: Device): string {
-    return `<strong>!${d.nodeId}</strong><br>${d.battery}% · ${d.sats} sats`;
+  private tooltipContent(m: MapMarker): string {
+    const node = this.nodes.find(n => n.id === m.id);
+    const power = node?.externalPower ? 'powered' : node?.battery !== undefined ? `${node.battery}%` : '—';
+    return `<strong>${escapeHtml(m.label)}</strong><br>${m.id} · ${power}`;
   }
 
-  formatLastSeen = formatLastSeen;
+  label(node: MeshNode): string {
+    return nodeLabel(node);
+  }
+
+  formatLastHeard(node: MeshNode): string {
+    const diff = Math.floor((Date.now() - node.lastHeard.getTime()) / 1000);
+    if (diff < 5)    return 'just now';
+    if (diff < 60)   return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    return `${Math.floor(diff / 3600)}h ago`;
+  }
 
   ngOnDestroy(): void {
     this.destroy$.next();
@@ -138,13 +150,13 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   zoomOut(): void { this.map?.zoomOut(); }
 
   fitDevices(): void {
-    const withGps = Array.from(this.markers.values());
-    if (!withGps.length || !this.map) return;
-    const group = L.featureGroup(withGps);
+    const all = Array.from(this.markers.values());
+    if (!all.length || !this.map) return;
+    const group = L.featureGroup(all);
     this.map.fitBounds(group.getBounds(), { padding: [60, 60] });
   }
 
   closeInfo(): void {
-    this.selectedDevice = null;
+    this.selectedNode = null;
   }
 }
