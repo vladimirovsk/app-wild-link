@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { AuthService } from '../auth/auth.service';
 import { MeshClientService, MeshStatus } from '../mesh/mesh-client.service';
 import { MessageStoreService } from '../mesh/message-store.service';
+import { BackendSyncService } from '../mesh/backend-sync.service';
 
 type View = 'map' | 'devices' | 'test' | 'messages';
 
@@ -30,7 +31,9 @@ export class DashboardComponent {
     public auth: AuthService,
     public mesh: MeshClientService,
     public messages: MessageStoreService,
+    backendSync: BackendSyncService,
   ) {
+    backendSync.start();
     const saved = localStorage.getItem(VIEW_KEY) as View;
     this.activeView = VALID_VIEWS.includes(saved) ? saved : 'map';
   }
