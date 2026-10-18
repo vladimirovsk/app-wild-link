@@ -1,4 +1,13 @@
+import { Observable, combineLatest, map, timer } from 'rxjs';
 import { MeshNode } from './mesh-node.model';
+
+/** How often views recompute staleness when no packets arrive. */
+export const CLOCK_PERIOD_MS = 30_000;
+
+/** Pairs the latest value with the current time, re-emitting every period. */
+export function withClock<T>(source$: Observable<T>, periodMs: number = CLOCK_PERIOD_MS): Observable<{ value: T; now: Date }> {
+  return combineLatest([source$, timer(0, periodMs)]).pipe(map(([value]) => ({ value, now: new Date() })));
+}
 
 /**
  * A node is stale after Meshtastic's default position broadcast interval (15 min).

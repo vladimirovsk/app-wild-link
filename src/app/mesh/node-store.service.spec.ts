@@ -34,6 +34,17 @@ describe('NodeStoreService', () => {
     expect(node()?.lastHeard).toEqual(t2);
   });
 
+  it('updates position and names without touching lastHeard when no arrival time is given', () => {
+    store.applyNodeInfo({ num: NODE, lastHeard: 1792300000 });
+
+    store.applyPosition(NODE, { latitudeI: 510447000, longitudeI: -1140719000 }, undefined);
+    store.applyName(NODE, 'KID', 'Kid backpack', undefined);
+
+    expect(node()?.lat).toBe(51.0447);
+    expect(node()?.shortName).toBe('KID');
+    expect(node()?.lastHeard).toEqual(new Date(1792300000 * 1000));
+  });
+
   it('shows external power instead of a level above 100', () => {
     store.applyBattery(NODE, 101, 4.2, t1);
 

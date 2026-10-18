@@ -6,7 +6,7 @@ import {
 import * as L from 'leaflet';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { MapMarker, nodeLabel, toMarkers } from '../../mesh/map-markers';
+import { MapMarker, nodeLabel, toMarkers, withClock } from '../../mesh/map-markers';
 import { MeshNode } from '../../mesh/mesh-node.model';
 import { NodeStoreService } from '../../mesh/node-store.service';
 
@@ -76,11 +76,13 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       maxZoom: 19,
     }).addTo(this.map);
 
-    this.nodeStore.nodes$
+    // Re-run on a clock as well, so markers turn grey when a node goes quiet.
+    withClock(this.nodeStore.nodes$)
       .pipe(takeUntil(this.destroy$))
-      .subscribe(nodes => {
+      .subscribe(({ value: nodes, now }) => {
         this.nodes = nodes;
-        this.syncMarkers(toMarkers(nodes));
+        this.syncMarkers(toMarkers(nodes, now));
+        this.cdr.markForCheck();
       });
   }
 

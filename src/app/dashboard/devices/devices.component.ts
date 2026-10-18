@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
+import { withClock } from '../../mesh/map-markers';
 import { NodeStoreService } from '../../mesh/node-store.service';
 import { BackendDevice, BackendDeviceService } from '../../shared/backend-device.service';
 import { DeviceRow, toDeviceRows } from './device-rows';
@@ -22,9 +23,9 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.subs.add(this.backend.getAll().subscribe(devices => this.registered$.next(devices)));
-    this.subs.add(combineLatest([this.nodeStore.nodes$, this.registered$]).subscribe(([nodes, registered]) => {
+    this.subs.add(combineLatest([withClock(this.nodeStore.nodes$), this.registered$]).subscribe(([{ value: nodes, now }, registered]) => {
       this.loading = registered === null && nodes.length === 0;
-      this.rows = toDeviceRows(nodes, registered ?? []);
+      this.rows = toDeviceRows(nodes, registered ?? [], now);
     }));
   }
 

@@ -1,8 +1,9 @@
 import { Inject, Injectable, NgZone, OnDestroy } from '@angular/core';
 import { Protobuf, Types } from '@meshtastic/core';
-import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, Subscription, interval } from 'rxjs';
 import { MESH_DEVICE_FACTORY, MESH_TRANSPORT_FACTORY, MeshDeviceLike, WEB_SERIAL_SUPPORTED } from './mesh-tokens';
 import { NodeStoreService } from './node-store.service';
+import { tapTransportStatus } from './status-tap';
 
 export type MeshStatus = 'unsupported' | 'disconnected' | 'connecting' | 'configuring' | 'connected' | 'error';
 
@@ -19,6 +20,19 @@ export interface DeviceLogLine {
   at: Date;
   source: string;
   message: string;
+}
+
+/** The firmware drops a serial client it has not heard from in 15 minutes. */
+export const SERIAL_HEARTBEAT_MS = 60_000;
+
+interface Session {
+  device: MeshDeviceLike;
+  transport: Types.Transport;
+}
+
+/** A device without a GPS fix or mesh time stamps packets with 0 (1970). */
+function arrivalTime(rxTime: Date): Date {
+  return rxTime.getTime() > 0 ? rxTime : new Date();
 }
 
 /**
@@ -39,8 +53,9 @@ export class MeshClientService implements OnDestroy {
   /** Log records the firmware sends to the client (needs the device's debug log API enabled) */
   readonly deviceLog$: Observable<DeviceLogLine> = this.log$.asObservable();
 
-  private device: MeshDeviceLike | null = null;
+  private session: Session | null = null;
   private unsubscribers: Array<() => void> = [];
+  private heartbeat: Subscription | null = null;
 
   constructor(
     @Inject(MESH_TRANSPORT_FACTORY) private readonly transportFactory: () => Promise<Types.Transport>,
@@ -57,34 +72,36 @@ export class MeshClientService implements OnDestroy {
     if (['connecting', 'configuring', 'connected'].includes(this.status$.value)) return;
 
     this.status$.next('connecting');
+    let session: Session | null = null;
     try {
-      const transport = await this.transportFactory();
+      const raw = await this.transportFactory();
+      const transport = tapTransportStatus(raw, status => this.zone.run(() => {
+        if (session && this.session === session) this.onStatus(status);
+      }));
       const device = this.deviceFactory(transport);
-      this.device = device;
+      session = { device, transport };
+      this.session = session;
       this.subscribe(device);
       this.status$.next('configuring');
       await device.configure();
     } catch {
-      this.release();
+      // The user disconnected (or the board was unplugged) while this was pending.
+      if (session && this.session !== session) return;
+      await this.closeSession();
       this.status$.next('error');
     }
   }
 
   async disconnect(): Promise<void> {
-    const device = this.device;
-    this.release();
-    try {
-      await device?.disconnect();
-    } finally {
-      if (this.supported) this.status$.next('disconnected');
-    }
+    await this.closeSession();
+    if (this.supported) this.status$.next('disconnected');
   }
 
   async sendText(text: string, to?: number): Promise<number> {
-    if (!this.device || this.status$.value !== 'connected') {
+    if (!this.session || this.status$.value !== 'connected') {
       throw new Error('Not connected to a device');
     }
-    return this.device.sendText(text, to);
+    return this.session.device.sendText(text, to);
   }
 
   ngOnDestroy(): void {
@@ -94,6 +111,10 @@ export class MeshClientService implements OnDestroy {
   private subscribe(device: MeshDeviceLike): void {
     const e = device.events;
     const run = <T>(handler: (value: T) => void) => (value: T) => this.zone.run(() => handler(value));
+    // While configuring, the library replays its node database as position/user
+    // events stamped "now"; those are not fresh receptions.
+    const heard = (rxTime: Date): Date | undefined =>
+      this.status$.value === 'configuring' ? undefined : arrivalTime(rxTime);
 
     this.unsubscribers = [
       e.onDeviceStatus.subscribe(run(status => this.onStatus(status))),
@@ -102,16 +123,17 @@ export class MeshClientService implements OnDestroy {
         this.store.setSelf(info.myNodeNum);
       })),
       e.onNodeInfoPacket.subscribe(run(info => this.onNodeInfo(info))),
-      e.onPositionPacket.subscribe(run(p => this.store.applyPosition(p.from, p.data, p.rxTime))),
+      e.onPositionPacket.subscribe(run(p => this.store.applyPosition(p.from, p.data, heard(p.rxTime)))),
       e.onTelemetryPacket.subscribe(run(t => {
         if (t.data.variant.case === 'deviceMetrics') {
-          this.store.applyBattery(t.from, t.data.variant.value.batteryLevel, t.data.variant.value.voltage, t.rxTime);
+          const metrics = t.data.variant.value;
+          this.store.applyBattery(t.from, metrics.batteryLevel, metrics.voltage, arrivalTime(t.rxTime));
         }
       })),
-      e.onUserPacket.subscribe(run(u => this.store.applyName(u.from, u.data.shortName, u.data.longName, u.rxTime))),
+      e.onUserPacket.subscribe(run(u => this.store.applyName(u.from, u.data.shortName, u.data.longName, heard(u.rxTime)))),
       e.onMessagePacket.subscribe(run(m => {
         if (m.from === this.myNodeNum$.value) return;
-        this.incoming$.next({ id: m.id, from: m.from, to: m.to, text: m.data, at: m.rxTime, direction: 'incoming' });
+        this.incoming$.next({ id: m.id, from: m.from, to: m.to, text: m.data, at: arrivalTime(m.rxTime), direction: 'incoming' });
       })),
       e.onLogRecord.subscribe(run(r => this.log$.next({
         at: r.time ? new Date(r.time * 1000) : new Date(),
@@ -124,10 +146,20 @@ export class MeshClientService implements OnDestroy {
   private onStatus(status: Types.DeviceStatusEnum): void {
     if (status === Types.DeviceStatusEnum.DeviceConfigured) {
       this.status$.next('connected');
-    } else if (status === Types.DeviceStatusEnum.DeviceDisconnected) {
-      this.release();
+      this.startHeartbeat();
+    } else if (status === Types.DeviceStatusEnum.DeviceDisconnected && this.session) {
+      void this.closeSession();
       this.status$.next('disconnected');
     }
+  }
+
+  private startHeartbeat(): void {
+    const device = this.session?.device;
+    if (!device) return;
+    this.heartbeat?.unsubscribe();
+    this.heartbeat = interval(SERIAL_HEARTBEAT_MS).subscribe(() => {
+      device.heartbeat().catch(() => undefined);
+    });
   }
 
   private onNodeInfo(info: Protobuf.Mesh.NodeInfo): void {
@@ -144,9 +176,17 @@ export class MeshClientService implements OnDestroy {
     });
   }
 
-  private release(): void {
+  /** Stops listening and closes the port; never throws (the stream may already be dead). */
+  private async closeSession(): Promise<void> {
+    const session = this.session;
+    this.session = null;
     this.unsubscribers.forEach(unsubscribe => unsubscribe());
     this.unsubscribers = [];
-    this.device = null;
+    this.heartbeat?.unsubscribe();
+    this.heartbeat = null;
+    if (!session) return;
+
+    try { await session.device.disconnect(); } catch { /* outgoing stream locked or already errored */ }
+    try { await session.transport.disconnect(); } catch { /* port already closed */ }
   }
 }

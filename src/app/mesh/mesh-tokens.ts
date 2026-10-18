@@ -3,7 +3,7 @@ import { MeshDevice, Types } from '@meshtastic/core';
 import { TransportWebSerial } from '@meshtastic/transport-web-serial';
 
 /** The part of MeshDevice the app uses; tests provide a fake with the same shape. */
-export type MeshDeviceLike = Pick<MeshDevice, 'events' | 'configure' | 'sendText' | 'disconnect'>;
+export type MeshDeviceLike = Pick<MeshDevice, 'events' | 'configure' | 'heartbeat' | 'sendText' | 'disconnect'>;
 
 const SERIAL_BAUD_RATE = 115200;
 

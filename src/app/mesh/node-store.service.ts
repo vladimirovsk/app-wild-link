@@ -52,17 +52,18 @@ export class NodeStoreService {
     }));
   }
 
-  applyPosition(num: number, p: ProtoPosition, rxTime: Date): void {
+  /** `heard` is undefined when the packet is a replay, not a fresh reception. */
+  applyPosition(num: number, p: ProtoPosition, heard: Date | undefined): void {
     const position = positionFromProto(p);
-    this.patch(num, rxTime, node => (position ? { ...node, ...this.positionPatch(position) } : node));
+    this.patch(num, heard, node => (position ? { ...node, ...this.positionPatch(position) } : node));
   }
 
   applyBattery(num: number, level: number | undefined, voltage: number | undefined, rxTime: Date): void {
     this.patch(num, rxTime, node => ({ ...node, ...batteryFromProto(level, voltage) }));
   }
 
-  applyName(num: number, shortName: string, longName: string, rxTime: Date): void {
-    this.patch(num, rxTime, node => ({ ...node, shortName, longName }));
+  applyName(num: number, shortName: string, longName: string, heard: Date | undefined): void {
+    this.patch(num, heard, node => ({ ...node, shortName, longName }));
   }
 
   clear(): void {

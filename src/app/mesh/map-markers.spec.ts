@@ -1,5 +1,24 @@
+import { discardPeriodicTasks, fakeAsync, tick } from '@angular/core/testing';
+import { BehaviorSubject } from 'rxjs';
 import { MeshNode } from './mesh-node.model';
-import { toMarkers } from './map-markers';
+import { toMarkers, withClock } from './map-markers';
+
+describe('withClock', () => {
+  it('re-emits the latest value every period so staleness is recomputed without new packets', fakeAsync(() => {
+    const source = new BehaviorSubject<string>('nodes');
+    const seen: Array<{ value: string; now: Date }> = [];
+    const sub = withClock(source, 30_000).subscribe(e => seen.push(e));
+
+    tick(30_000);
+    tick(30_000);
+
+    expect(seen.length).toBe(3);
+    expect(seen.map(e => e.value)).toEqual(['nodes', 'nodes', 'nodes']);
+    expect(seen[2].now.getTime() - seen[0].now.getTime()).toBe(60_000);
+    sub.unsubscribe();
+    discardPeriodicTasks();
+  }));
+});
 
 const now = new Date('2026-10-18T12:00:00Z');
 const minutesAgo = (m: number) => new Date(now.getTime() - m * 60_000);
