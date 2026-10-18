@@ -15,6 +15,12 @@ export interface MeshTextMessage {
   direction: 'incoming' | 'outgoing';
 }
 
+export interface DeviceLogLine {
+  at: Date;
+  source: string;
+  message: string;
+}
+
 /**
  * Connection to the head device through the Meshtastic client API.
  * Routes every packet the device hands over into the node store; the app
@@ -28,6 +34,10 @@ export class MeshClientService implements OnDestroy {
   private readonly incoming$ = new Subject<MeshTextMessage>();
   /** Text messages from other nodes */
   readonly messages$: Observable<MeshTextMessage> = this.incoming$.asObservable();
+
+  private readonly log$ = new Subject<DeviceLogLine>();
+  /** Log records the firmware sends to the client (needs the device's debug log API enabled) */
+  readonly deviceLog$: Observable<DeviceLogLine> = this.log$.asObservable();
 
   private device: MeshDeviceLike | null = null;
   private unsubscribers: Array<() => void> = [];
@@ -103,6 +113,11 @@ export class MeshClientService implements OnDestroy {
         if (m.from === this.myNodeNum$.value) return;
         this.incoming$.next({ id: m.id, from: m.from, to: m.to, text: m.data, at: m.rxTime, direction: 'incoming' });
       })),
+      e.onLogRecord.subscribe(run(r => this.log$.next({
+        at: r.time ? new Date(r.time * 1000) : new Date(),
+        source: r.source,
+        message: r.message,
+      }))),
     ];
   }
 

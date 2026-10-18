@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Types } from '@meshtastic/core';
-import { MeshClientService, MeshStatus, MeshTextMessage } from './mesh-client.service';
+import { DeviceLogLine, MeshClientService, MeshStatus, MeshTextMessage } from './mesh-client.service';
 import { MESH_DEVICE_FACTORY, MESH_TRANSPORT_FACTORY, MeshDeviceLike, WEB_SERIAL_SUPPORTED } from './mesh-tokens';
 import { NodeStoreService } from './node-store.service';
 
@@ -30,6 +30,7 @@ class FakeDevice {
     onUserPacket: new FakeDispatcher<unknown>(),
     onMessagePacket: new FakeDispatcher<unknown>(),
     onDeviceStatus: new FakeDispatcher<Types.DeviceStatusEnum>(),
+    onLogRecord: new FakeDispatcher<unknown>(),
   };
   configureCalls = 0;
   sent: Array<{ text: string; to: unknown }> = [];
@@ -155,6 +156,17 @@ describe('MeshClientService', () => {
 
     expect(received.length).toBe(1);
     expect(received[0]).toEqual({ id: 1, from: OTHER, to: 0xffffffff, text: 'hello', at: rxTime, direction: 'incoming' });
+  });
+
+  it('streams the device log records', async () => {
+    const { client } = setup();
+    const lines: DeviceLogLine[] = [];
+    client.deviceLog$.subscribe(l => lines.push(l));
+    await client.connect();
+
+    device().events.onLogRecord.dispatch({ message: 'New GPS pos', source: 'GPS', time: 1792300000, level: 20 });
+
+    expect(lines).toEqual([{ at: new Date(1792300000 * 1000), source: 'GPS', message: 'New GPS pos' }]);
   });
 
   it('sends text through the device', async () => {
