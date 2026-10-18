@@ -7,6 +7,7 @@ import { MapComponent } from './map/map.component';
 import { DevicesComponent } from './devices/devices.component';
 import { HtitTestComponent } from './htit-test/htit-test.component';
 import { SerialConsoleComponent } from './htit-test/serial-console/serial-console.component';
+import { MessagesComponent } from './messages/messages.component';
 
 const routes: Routes = [
   { path: '', component: DashboardComponent }
@@ -19,6 +20,7 @@ const routes: Routes = [
     DevicesComponent,
     HtitTestComponent,
     SerialConsoleComponent,
+    MessagesComponent,
   ],
   imports: [
     CommonModule,

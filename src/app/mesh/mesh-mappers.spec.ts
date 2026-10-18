@@ -1,4 +1,4 @@
-import { batteryFromProto, nodeIdFromNum, positionFromProto, utf8Length } from './mesh-mappers';
+import { batteryFromProto, nodeIdFromNum, parseNodeId, positionFromProto, utf8Length } from './mesh-mappers';
 
 describe('mesh mappers', () => {
   it('formats node ids as ! plus 8 hex digits', () => {
@@ -19,6 +19,15 @@ describe('mesh mappers', () => {
   it('treats battery level above 100 as external power', () => {
     expect(batteryFromProto(101, 4.2)).toEqual({ battery: undefined, externalPower: true, voltage: 4.2 });
     expect(batteryFromProto(87)).toEqual({ battery: 87, externalPower: false, voltage: undefined });
+  });
+
+  it('parses a typed node id, blank meaning broadcast', () => {
+    expect(parseNodeId('!0acb0984')).toBe(0x0acb0984);
+    expect(parseNodeId('  0ACB0984 ')).toBe(0x0acb0984);
+    expect(parseNodeId('')).toBeUndefined();
+    expect(parseNodeId('   ')).toBeUndefined();
+    expect(parseNodeId('!xyz')).toBeNull();
+    expect(parseNodeId('!123456789')).toBeNull();
   });
 
   it('counts UTF-8 bytes, not characters', () => {

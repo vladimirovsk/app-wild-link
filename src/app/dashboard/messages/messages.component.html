@@ -1,0 +1,70 @@
+<div class="msg-panel">
+  <!-- Header -->
+  <div class="msg-panel__header">
+    <span class="msg-panel__title">LoRa Messages</span>
+    <span class="msg-panel__count">{{ messages.length }} message{{ messages.length !== 1 ? 's' : '' }}</span>
+
+    <!-- Device link status -->
+    <ng-container *ngIf="mesh.status$ | async as status">
+      <span
+        class="msg-panel__ws-dot"
+        [class.msg-panel__ws-dot--on]="status === 'connected'"
+        [title]="status === 'connected' ? 'Device connected' : 'Device not connected'"
+      ></span>
+      <span class="msg-panel__ws-label">{{ status === 'connected' ? 'on air' : 'no device' }}</span>
+    </ng-container>
+
+    <button class="btn-clear" (click)="clear()" title="Clear local history">Clear</button>
+  </div>
+
+  <!-- Message list -->
+  <div class="msg-list">
+    <div
+      *ngFor="let msg of messages"
+      class="msg-bubble"
+      [class.msg-bubble--outgoing]="msg.direction === 'outgoing'"
+    >
+      <div class="msg-bubble__meta">
+        <span class="msg-bubble__from">{{ label(msg.from) }}</span>
+        <span class="msg-bubble__arrow">→</span>
+        <span class="msg-bubble__to">{{ label(msg.to) }}</span>
+        <span class="msg-bubble__ts">{{ msg.at | date:'HH:mm:ss' }}</span>
+      </div>
+      <div class="msg-bubble__text">{{ msg.text }}</div>
+    </div>
+
+    <div *ngIf="messages.length === 0" class="msg-list__empty">
+      No messages yet. Waiting for LoRa packets…
+    </div>
+
+    <!-- Scroll anchor -->
+    <div #scrollAnchor></div>
+  </div>
+
+  <!-- Send form -->
+  <div class="msg-send">
+    <div class="msg-send__row">
+      <input
+        class="msg-send__to"
+        [formControl]="toNodeId"
+        placeholder="!nodeid (blank = broadcast)"
+        spellcheck="false"
+      />
+      <input
+        class="msg-send__text"
+        [formControl]="sendText"
+        placeholder="Type a message…"
+        (keydown.enter)="send()"
+      />
+      <button
+        class="btn-send"
+        [disabled]="sendText.invalid || sending || bytesLeft < 0 || (mesh.status$ | async) !== 'connected'"
+        (click)="send()"
+      >
+        {{ sending ? '…' : 'Send' }}
+      </button>
+    </div>
+    <div class="msg-send__hint" [class.msg-send__error]="bytesLeft < 0">{{ bytesLeft }} bytes left</div>
+    <div *ngIf="sendError" class="msg-send__error">{{ sendError }}</div>
+  </div>
+</div>

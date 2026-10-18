@@ -1,11 +1,12 @@
 import { Component } from '@angular/core';
 import { AuthService } from '../auth/auth.service';
 import { MeshClientService, MeshStatus } from '../mesh/mesh-client.service';
+import { MessageStoreService } from '../mesh/message-store.service';
 
-type View = 'map' | 'devices' | 'test';
+type View = 'map' | 'devices' | 'test' | 'messages';
 
 const VIEW_KEY = 'wl_active_view';
-const VALID_VIEWS: View[] = ['map', 'devices', 'test'];
+const VALID_VIEWS: View[] = ['map', 'devices', 'test', 'messages'];
 
 const STATUS_TEXT: Record<MeshStatus, string> = {
   unsupported: 'This browser cannot open USB devices. Use Chrome or Edge on a computer.',
@@ -28,6 +29,7 @@ export class DashboardComponent {
   constructor(
     public auth: AuthService,
     public mesh: MeshClientService,
+    public messages: MessageStoreService,
   ) {
     const saved = localStorage.getItem(VIEW_KEY) as View;
     this.activeView = VALID_VIEWS.includes(saved) ? saved : 'map';

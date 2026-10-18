@@ -51,6 +51,18 @@ export function batteryFromProto(level?: number, voltage?: number): Battery {
   };
 }
 
+/**
+ * Parses a node id the user typed ('!0acb0984' or '0acb0984').
+ * Returns undefined for blank input (broadcast) and null when it is not a valid id.
+ */
+export function parseNodeId(input: string): number | undefined | null {
+  const trimmed = input.trim();
+  if (!trimmed) return undefined;
+  const hex = trimmed.startsWith('!') ? trimmed.slice(1) : trimmed;
+  if (!/^[0-9a-fA-F]{1,8}$/.test(hex)) return null;
+  return parseInt(hex, 16);
+}
+
 /** Text limits on LoRa are in bytes; Cyrillic letters take 2 bytes each. */
 export function utf8Length(text: string): number {
   return new TextEncoder().encode(text).length;

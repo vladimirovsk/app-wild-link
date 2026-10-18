@@ -22,7 +22,12 @@
         </button>
       </ng-container>
 
-      <span class="topbar__view-label">{{ activeView === 'map' ? 'Map View' : activeView === 'devices' ? 'Devices' : 'Module Test' }}</span>
+      <span class="topbar__view-label">{{
+        activeView === 'map'      ? 'Map View'      :
+        activeView === 'devices'  ? 'Devices'       :
+        activeView === 'messages' ? 'LoRa Messages' :
+        'Module Test'
+      }}</span>
 
       <button class="btn-logout" (click)="auth.logout()" title="Sign out">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -86,6 +91,23 @@
         <span class="sidebar__label">TEST</span>
       </button>
 
+      <button
+        class="sidebar__btn"
+        [class.sidebar__btn--active]="activeView === 'messages'"
+        (click)="setView('messages')"
+        title="LoRa Messages"
+      >
+        <div class="sidebar__icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <ng-container *ngIf="messages.messages$ | async as list">
+            <span *ngIf="list.length" class="sidebar__msg-badge">{{ list.length }}</span>
+          </ng-container>
+        </div>
+        <span class="sidebar__label">LoRa</span>
+      </button>
+
       <div class="sidebar__spacer"></div>
 
       <!-- Settings placeholder -->
@@ -103,6 +125,7 @@
       <app-map       *ngIf="activeView === 'map'"></app-map>
       <app-devices   *ngIf="activeView === 'devices'"></app-devices>
       <app-htit-test *ngIf="activeView === 'test'"></app-htit-test>
+      <app-messages  *ngIf="activeView === 'messages'"></app-messages>
     </main>
   </div>
 </div>
