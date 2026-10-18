@@ -9,9 +9,7 @@ import { takeUntil } from 'rxjs/operators';
 import { MapMarker, nodeLabel, toMarkers, withClock } from '../../mesh/map-markers';
 import { MeshNode } from '../../mesh/mesh-node.model';
 import { NodeStoreService } from '../../mesh/node-store.service';
-
-const TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-const TILE_ATTR = '&copy; <a href="https://carto.com/">CARTO</a>';
+import { BASE_LAYERS } from './base-layers';
 
 type MarkerState = 'online' | 'offline';
 
@@ -70,11 +68,16 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
     setTimeout(() => this.map.invalidateSize(), 0);
 
-    L.tileLayer(TILE_URL, {
-      attribution: TILE_ATTR,
-      subdomains: 'abcd',
-      maxZoom: 19,
-    }).addTo(this.map);
+    const baseLayers: Record<string, L.TileLayer> = {};
+    for (const cfg of BASE_LAYERS) {
+      baseLayers[cfg.name] = L.tileLayer(cfg.url, {
+        attribution: cfg.attribution,
+        maxZoom: cfg.maxZoom,
+        ...(cfg.subdomains ? { subdomains: cfg.subdomains } : {}),
+      });
+    }
+    baseLayers[BASE_LAYERS[0].name].addTo(this.map);
+    L.control.layers(baseLayers, undefined, { position: 'topright' }).addTo(this.map);
 
     // Re-run on a clock as well, so markers turn grey when a node goes quiet.
     withClock(this.nodeStore.nodes$)
